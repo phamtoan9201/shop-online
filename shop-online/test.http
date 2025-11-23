@@ -1,0 +1,122 @@
+### test.http - Kịch bản kiểm thử cho API shop-online
+### Yêu cầu: Cài extension "REST Client" trên VS Code
+
+# Biến môi trường, giúp dễ dàng thay đổi URL và token
+@baseUrl = http://localhost:3000/api
+@authToken = 
+@adminToken = 
+
+###
+# ============================================
+# 1. AUTHENTICATION (XÁC THỰC NGƯỜI DÙNG)
+# ============================================
+
+# ✅ Đăng ký một người dùng mới
+# @name registerUser
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "ten_dang_nhap": "testuser2",
+  "email": "testuser2@example.com",
+  "mat_khau": "password123"
+}
+
+###
+# ✅ Đăng nhập để lấy token
+# Token sẽ được tự động lưu vào biến @authToken nhờ cú pháp @name và cURL
+# @name loginUser
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+{
+  "email": "testuser2@example.com",
+  "mat_khau": "$2b$10$CjuCpYInk.sbFazhKyr6luwqczwWcIadBeZpzdUut6DbuMdxf0uSu"
+}
+
+###
+# Lưu token vào biến để dùng cho các request sau
+@authToken = {{loginUser.response.body.token}}
+
+# ✅ Đăng nhập với tài khoản ADMIN để lấy token admin
+# Giả sử bạn đã có tài khoản admin trong DB với email: admin@shop.com
+# @name loginAdmin
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "testuser1@example.com",
+  "mat_khau": "1234."
+}
+
+###
+# Lưu token admin vào biến
+@adminToken = {{loginAdmin.response.body.token}}
+
+
+###
+# ============================================
+# 2. PRODUCTS (SẢN PHẨM) - Public & Admin
+# ============================================
+
+# ✅ Lấy tất cả sản phẩm (Public, không cần token)
+GET {{baseUrl}}/products
+
+###
+
+###
+# ✅ Thêm sản phẩm mới (Yêu cầu token ADMIN)
+# Chú ý: Đây là request multipart/form-data để upload ảnh
+POST {{baseUrl}}/products
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="ten_san_pham"
+
+iPhone 15 Pro Max
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="mo_ta"
+
+Hàng chính hãng VN/A
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="gia"
+
+30000000
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="so_luong"
+
+100
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="id_danh_muc"
+
+1
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="image"; filename="iphone.jpg"
+Content-Type: image/jpeg
+
+< /Users/phamcongtoan/Pictures/iphone.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+
+###
+# ============================================
+# 3. CART (GIỎ HÀNG) - Protected
+# ============================================
+
+# ✅ Lấy giỏ hàng của người dùng đã đăng nhập
+# Yêu cầu token của người dùng thường
+GET {{baseUrl}}/cart
+Authorization: Bearer {{authToken}}
+
+###
+# ✅ Thêm sản phẩm vào giỏ hàng
+POST {{baseUrl}}/cart/add
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "so_luong": 2
+}
+
+}
